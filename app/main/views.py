@@ -34,7 +34,7 @@ class CatalogView(TemplateView):
     }
     
     def get_context_data(self, **kwargs):
-        context =  super().get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         category_slug = kwargs.get('category_slug')
         categories = Category.objects.all()
         products = Product.objects.all().order_by('-created_at')
@@ -50,7 +50,8 @@ class CatalogView(TemplateView):
                 Q(name__icontains=query) | Q(description__icontains=query)
             )
         
-        filter_params = []
+        # Исправлено: [] на {} для словаря
+        filter_params = {}
         for param, filter_func in self.FILTER_MAPPING.items():
             value = self.request.GET.get(param)
             if value:
@@ -66,7 +67,8 @@ class CatalogView(TemplateView):
             'products': products,
             'current_category': category_slug,
             'filter_params': filter_params,
-            'sizes': Size.object.all(),
+            # Исправлено: Size.object.all() на Size.objects.all()
+            'sizes': Size.objects.all(),
             'search_query': query or ''
         })
         
@@ -80,11 +82,13 @@ class CatalogView(TemplateView):
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         if request.headers.get('HX-Request'):
-            if context.get('show-serch'):
+            # Исправлено: show-serch на show_search
+            if context.get('show_search'):
                 return TemplateResponse(request, 'main/search_input.html', context)
             elif context.get('reset_search'):
                 return TemplateResponse(request, 'main/search_button.html', {})
-            template = 'main/filter_modal.html' if request.GET.get('show_filters') == True else 'main/catalog.html'
+            # Исправлено: сравнение с True на сравнение со строкой 'true'
+            template = 'main/filter_modal.html' if request.GET.get('show_filters') == 'true' else 'main/catalog.html'
             return TemplateResponse(request, template, context)
         return TemplateResponse(request, self.template_name, context)
     
@@ -111,7 +115,9 @@ class ProductDetailView(DetailView):
         self.object = self.get_object()
         context = self.get_context_data(**kwargs)
         
-        if request.header.get('HX-Request'):
+        # Исправлено: header на headers
+        if request.headers.get('HX-Request'):
             return TemplateResponse(request, 'main/product_detail.html', context)
         
-        raise TemplateResponse(request, self.template_name, context)
+        # Исправлено: raise на return
+        return TemplateResponse(request, self.template_name, context)
