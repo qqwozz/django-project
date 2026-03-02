@@ -278,6 +278,58 @@
     document.addEventListener('DOMContentLoaded', initializeSizeRadios);
     document.addEventListener('htmx:afterSwap', initializeSizeRadios);
 
+    function addToCart() {
+        const addToCartBtn = document.getElementById('add-to-cart-btn');
+        const productSlug = '{{ product.slug }}';
+        
+        updateSelectedSize();
+        
+        if (!selectedSizeId) {
+            showNotification('Please select a size');
+            return;
+        }
+        
+        addToCartBtn.disabled = true;
+        addToCartBtn.textContent = 'Adding...';
+        
+        const formData = new FormData();
+        formData.append('size_id', selectedSizeId);
+        formData.append('quantity', 1);
+        
+        fetch(`{% url 'cart:add_to_cart' product.slug %}`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message || 'Added to cart');
+                updateHeaderCartCount(data.total_items);
+                
+                // Open cart modal
+                htmx.ajax('GET', '{% url "cart:cart_modal" %}', {
+                    target: '#cart-modal',
+                    swap: 'innerHTML'
+                }).then(() => {
+                    document.getElementById('cart-modal').classList.remove('hidden');
+                });
+            } else {
+                showNotification(data.error || 'Error adding to cart');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error adding to cart');
+        })
+        .finally(() => {
+            addToCartBtn.disabled = false;
+            addToCartBtn.textContent = 'ADD TO CART';
+        });
+    }
+
     const productCards = document.querySelectorAll('.product-card');
     productCards.forEach(card => {
         card.addEventListener('mouseenter', function() {

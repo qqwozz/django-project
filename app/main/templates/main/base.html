@@ -152,7 +152,12 @@
                 <a class="text-sm font-medium text-gray-900 uppercase hover:text-gray-600">
                     ACCOUNT
                 </a>
-                <a href="#" id="mobileCart" class="block text-sm font-medium text-gray-900 hover:text-gray-700 py-2">CART (0)</a>
+                <a hx-get="{% url 'cart:cart_modal' %}" 
+                   hx-target="#cart-container"
+                   hx-swap="innerHTML"
+                   href="javascript:void(0)" 
+                   id="mobileCart" 
+                   class="block text-sm font-medium text-gray-900 hover:text-gray-700 py-2 cursor-pointer">CART (0)</a>
             </div>
         </div>
     </div>
@@ -208,12 +213,22 @@
                     <a class="text-sm font-medium text-gray-900 uppercase hover:text-gray-600">
                         ACCOUNT
                     </a>
-                    <a href="#" id="desktopCart" class="text-sm font-medium text-gray-900 hover:text-gray-700">CART (0)</a>
+                    <a hx-get="{% url 'cart:cart_modal' %}" 
+                       hx-target="#cart-container"
+                       hx-swap="innerHTML"
+                       href="javascript:void(0)" 
+                       id="desktopCart" 
+                       class="text-sm font-medium text-gray-900 hover:text-gray-700 cursor-pointer">CART (0)</a>
                 </div>
                 
                 <!-- Mobile Cart Icon -->
                 <div class="md:hidden">
-                    <a href="#" id="mobileCartHeader" class="text-xs font-medium text-gray-900">CART (0)</a>
+                    <a hx-get="{% url 'cart:cart_modal' %}" 
+                       hx-target="#cart-container"
+                       hx-swap="innerHTML"
+                       href="javascript:void(0)" 
+                       id="mobileCartHeader" 
+                       class="text-xs font-medium text-gray-900 cursor-pointer">CART (0)</a>
                 </div>
             </div>
         </div>
