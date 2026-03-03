@@ -116,10 +116,10 @@
     <div id="mobileMenu" class="mobile-menu fixed top-0 left-0 w-80 h-full bg-white z-50 md:hidden shadow-lg">
         <div class="p-6">
             <div class="flex justify-between items-center mb-8">
-                <h2 class="text-lg font-bold tracking-tight">
+                <h2 class="text-lg font-bold tracking-tight text-left">
                     ENFANTS RICHES <br>
                     DÉPRIMÉS
-                </h2>   
+                </h2>
                 <button id="closeMenu" class="hamburger active">
                     <span></span>
                     <span></span>
@@ -148,16 +148,14 @@
             
             <div class="mt-8 space-y-4">
                 <a href="#" class="block text-sm font-medium text-gray-900 hover:text-gray-700 py-2">SEARCH</a>
-                
-                <a class="text-sm font-medium text-gray-900 uppercase hover:text-gray-600">
+                <a href="{% url 'users:profile' %}" 
+                hx-get="{% url 'users:profile' %}" 
+                hx-target="#main-content" 
+                hx-push-url="true"
+                class="text-sm font-medium text-gray-900 uppercase hover:text-gray-600">
                     ACCOUNT
                 </a>
-                <a hx-get="{% url 'cart:cart_modal' %}" 
-                   hx-target="#cart-container"
-                   hx-swap="innerHTML"
-                   href="javascript:void(0)" 
-                   id="mobileCart" 
-                   class="block text-sm font-medium text-gray-900 hover:text-gray-700 py-2 cursor-pointer">CART (0)</a>
+                <a href="#" id="mobileCart" class="block text-sm font-medium text-gray-900 hover:text-gray-700 py-2">CART (0)</a>
             </div>
         </div>
     </div>
@@ -180,7 +178,7 @@
                        hx-target="#main-content" 
                        hx-push-url="true">
                         <h1 class="text-sm sm:text-lg font-bold tracking-tight text-left">
-                            ENFANTS RICHES<br>
+                            ENFANTS RICHES <br>
                             DÉPRIMÉS
                         </h1>
                     </a>
@@ -210,25 +208,19 @@
                             SEARCH
                         </button>
                     </div>
-                    <a class="text-sm font-medium text-gray-900 uppercase hover:text-gray-600">
+                    <a href="{% url 'users:profile' %}" 
+                    hx-get="{% url 'users:profile' %}" 
+                    hx-target="#main-content" 
+                    hx-push-url="true"
+                    class="text-sm font-medium text-gray-900 uppercase hover:text-gray-600">
                         ACCOUNT
                     </a>
-                    <a hx-get="{% url 'cart:cart_modal' %}" 
-                       hx-target="#cart-container"
-                       hx-swap="innerHTML"
-                       href="javascript:void(0)" 
-                       id="desktopCart" 
-                       class="text-sm font-medium text-gray-900 hover:text-gray-700 cursor-pointer">CART (0)</a>
+                    <a href="#" id="desktopCart" class="text-sm font-medium text-gray-900 hover:text-gray-700">CART (0)</a>
                 </div>
                 
                 <!-- Mobile Cart Icon -->
                 <div class="md:hidden">
-                    <a hx-get="{% url 'cart:cart_modal' %}" 
-                       hx-target="#cart-container"
-                       hx-swap="innerHTML"
-                       href="javascript:void(0)" 
-                       id="mobileCartHeader" 
-                       class="text-xs font-medium text-gray-900 cursor-pointer">CART (0)</a>
+                    <a href="#" id="mobileCartHeader" class="text-xs font-medium text-gray-900">CART (0)</a>
                 </div>
             </div>
         </div>
@@ -259,7 +251,7 @@
                        class="block p-8 border border-gray-200 hover:border-gray-300 transition-colors">
                         <h3 class="text-xl font-bold">{{ category.name|upper }}</h3>
                     </a>
-                    {% endfor %}    
+                    {% endfor %}
                 </div>
             </div>
         </main>
@@ -297,7 +289,44 @@
                 closeMobileMenu();
             });
     
-        
+            // Cart functionality
+            const desktopCart = document.getElementById('desktopCart');
+            const mobileCart = document.getElementById('mobileCart');
+            const mobileCartHeader = document.getElementById('mobileCartHeader');
+            
+            // Get initial cart count
+            updateCartCount();
+            
+            function updateHeaderCartCount(count) {
+                const cartText = `CART (${count})`;
+                if (desktopCart) desktopCart.textContent = cartText;
+                if (mobileCart) mobileCart.textContent = cartText;
+                if (mobileCartHeader) mobileCartHeader.textContent = cartText;
+            }
+            
+            function updateCartCount() {
+                fetch('{% url "cart:cart_count" %}')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateHeaderCartCount(data.total_items);
+                    });
+            }
+    
+            function openCart() {
+                htmx.ajax('GET', '{% url "cart:cart_modal" %}', {
+                    target: '#cart-container',
+                    swap: 'innerHTML'
+                });
+            }
+    
+            [desktopCart, mobileCart, mobileCartHeader].forEach(cartLink => {
+                if (cartLink) {
+                    cartLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        openCart();
+                    });
+                }
+            });
     
             // Close mobile menu on window resize
             window.addEventListener('resize', function() {
