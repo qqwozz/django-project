@@ -1,7 +1,7 @@
 <div class="space-y-2">
     <p class="text-sm text-gray-700">Default Address</p>
     <p class="text-sm text-gray-700">{{ user.first_name }} {{ user.last_name }}</p>
-    <p class="text-sm text-gray-700">{{ user.addres1|default:"" }} {{ user.addres2|default:"" }}</p>
+    <p class="text-sm text-gray-700">{{ user.address1|default:"" }} {{ user.address2|default:"" }}</p>
     <p class="text-sm text-gray-700">{{ user.city|default:"" }}, {{ user.country|default:"Not specified" }}</p>
 </div>
 <div class="mt-4 flex gap-4">

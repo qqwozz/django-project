@@ -58,7 +58,7 @@ class CustomUserLoginForm(AuthenticationForm):
             self.user_cache = authenticate(self.request, email=email, password=password)
             if self.user_cache is None:
                 raise forms.ValidationError('Invalid email or password.')
-            elif not self.user_cache.is_active():
+            elif not self.user_cache.is_active:
                 raise forms.ValidationError('This account is inactive.')
         return self.cleaned_data
 
@@ -88,12 +88,12 @@ class CustomUserUpdateForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ('first_name', 'last_name', 'email', 'company', 
-                  'addres1', 'addres2', 'city', 'country',
+                  'address1', 'address2', 'city', 'country',
                   'province', 'postal_code', 'phone')
         widgets = {
             'company': forms.TextInput(attrs={'class': 'dotted-input w-full py-3 text-sm font-medium text-gray-900 placeholder-gray-500', 'placeholder': 'COMPANY'}),
-            'addres1': forms.TextInput(attrs={'class': 'dotted-input w-full py-3 text-sm font-medium text-gray-900 placeholder-gray-500', 'placeholder': 'ADDRESS LINE 1'}),
-            'addres2': forms.TextInput(attrs={'class': 'dotted-input w-full py-3 text-sm font-medium text-gray-900 placeholder-gray-500', 'placeholder': 'ADDRESS LINE 2'}),
+            'address1': forms.TextInput(attrs={'class': 'dotted-input w-full py-3 text-sm font-medium text-gray-900 placeholder-gray-500', 'placeholder': 'ADDRESS LINE 1'}),
+            'address2': forms.TextInput(attrs={'class': 'dotted-input w-full py-3 text-sm font-medium text-gray-900 placeholder-gray-500', 'placeholder': 'ADDRESS LINE 2'}),
             'city': forms.TextInput(attrs={'class': 'dotted-input w-full py-3 text-sm font-medium text-gray-900 placeholder-gray-500', 'placeholder': 'CITY'}),
             'country': forms.TextInput(attrs={'class': 'dotted-input w-full py-3 text-sm font-medium text-gray-900 placeholder-gray-500', 'placeholder': 'COUNTRY'}),
             'province': forms.TextInput(attrs={'class': 'dotted-input w-full py-3 text-sm font-medium text-gray-900 placeholder-gray-500', 'placeholder': 'PROVINCE'}),
@@ -112,7 +112,7 @@ class CustomUserUpdateForm(forms.ModelForm):
         cleaned_data = super().clean()
         if not cleaned_data.get('email'):
             cleaned_data['email'] = self.instance.email
-        for field in ['company', 'addres1', 'addres2', 'city', 'country',
+        for field in ['company', 'address1', 'address2', 'city', 'country',
                       'province', 'postal_code', 'phone']:
             if cleaned_data.get(field):
                 cleaned_data[field] = strip_tags(cleaned_data[field])

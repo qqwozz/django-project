@@ -85,7 +85,7 @@ def update_account_details(request):
         else:
             return TemplateResponse(request, 'users/partials/edit_account_details.html', {'user': request.user, 'form': form})
     if request.headers.get('HX-Request'):
-        return HttpResponse(headers={'HX-Redirect': reverse('users:profile')})
+        return HttpResponse(headers={'HX-Redirect': reverse('user:profile')})
     return redirect('users:profile')
 
 

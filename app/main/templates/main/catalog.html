@@ -28,7 +28,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
         {% for product in products %}
         <div class="product-card group cursor-pointer" 
-             hx-get="{% url 'main:detail_product' product.slug %}"
+             hx-get="{% url 'main:product_detail' product.slug %}"
              hx-target="#main-content"
              hx-push-url="true">
             <div class="aspect-square overflow-hidden bg-gray-100 mb-4">

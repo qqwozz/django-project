@@ -53,7 +53,7 @@ class Cart(models.Model):
             item = self.items.get(id=item_id)
             if quantity > 0:
                 item.quantity = quantity
-                item.save()
+                item.sav()
             else:
                 item.delete()
             return True
@@ -83,4 +83,4 @@ class CartItem(models.Model):
 
     @property
     def total_price(self):
-        return self.product.price * self.quantity
+        return Decimal(str(self.product.price)) * self.quantity

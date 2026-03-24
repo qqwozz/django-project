@@ -14,7 +14,7 @@
                 {% empty %}
                     <div class="text-center py-20 text-gray-500">
                         <p class="text-lg mb-4">Your cart is empty</p>
-                        <button onclick="closeCart(true)" class="text-sm underline">Continue shopping</button>
+                        <button onclick="closeCart()" class="text-sm underline">Continue shopping</button>
                     </div>
                 {% endfor %}
             </div>
@@ -67,7 +67,7 @@
         }
     }
 
-    function closeCart(redirectToShop = false) {
+    function closeCart() {
         const modal = document.getElementById('cart-modal');
         const overlay = document.getElementById('cart-overlay');
         if (modal && overlay) {
@@ -80,16 +80,6 @@
                 const container = document.getElementById('cart-container');
                 if (container) {
                     container.innerHTML = '';
-                }
-                // Redirect to shop if requested
-                if (redirectToShop) {
-                    const shopUrl = "{% url 'main:index' %}";
-                    // Check if HTMX is available and use it for smooth navigation
-                    if (typeof htmx !== 'undefined') {
-                        htmx.ajax('GET', shopUrl, {target: '#main-content', pushUrl: shopUrl});
-                    } else {
-                        window.location.href = shopUrl;
-                    }
                 }
             }, 300);
         } else {
