@@ -2,8 +2,9 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotAllowed
 from django.template.response import TemplateResponse
+from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 from .forms import CustomUserCreationForm, CustomUserLoginForm, \
     CustomUserUpdateForm
@@ -93,6 +94,7 @@ def update_account_details(request):
     return redirect('users:profile')
 
 
+@require_POST
 def logout_view(request):
     logout(request)
     if request.headers.get('HX-Request'):

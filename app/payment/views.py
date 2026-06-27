@@ -88,7 +88,7 @@ def stripe_success(request):
         try:
             session = stripe.checkout.Session.retrieve(session_id)
             order_id = session.metadata.get('order_id')
-            order = get_object_or_404(Order, id=order_id)
+            order = get_object_or_404(Order, id=order_id, user=request.user)
 
             if session.payment_status == 'paid':
                 cart = CartMixin().get_cart(request)
@@ -107,7 +107,7 @@ def stripe_success(request):
 def stripe_cancel(request):
     order_id = request.GET.get('order_id')
     if order_id:
-        order = get_object_or_404(Order, id=order_id)
+        order = get_object_or_404(Order, id=order_id, user=request.user)
         order.status = 'cancelled'
         order.save()
         context = {'order': order}
