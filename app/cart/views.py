@@ -7,23 +7,20 @@ from django.db import transaction
 from main.models import Product, ProductSize
 from .models import Cart, CartItem
 from .forms import AddToCartForm
-import json
 
 
 class CartMixin:
     def get_cart(self, request):
-        if hasattr(request, 'cart'):
+        if hasattr(request, 'cart') and request.cart:
             return request.cart
-    
+
         if not request.session.session_key:
             request.session.create()
 
         cart, created = Cart.objects.get_or_create(
             session_key=request.session.session_key
         )
-
-        request.session['cart_id'] = cart.id
-        request.session.modified = True
+        request.cart = cart
         return cart
     
 
@@ -108,7 +105,10 @@ class UpdateCartItemView(CartMixin, View):
         cart = self.get_cart(request)
         cart_item = get_object_or_404(CartItem, id=item_id, cart=cart)
 
-        quantity = int(request.POST.get('quantity', 1))
+        try:
+            quantity = int(request.POST.get('quantity', 1))
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Invalid quantity'}, status=400)
 
         if quantity < 0:
             return JsonResponse({'error': 'Invalid quantity'}, status=400)
@@ -182,7 +182,7 @@ class ClearCartView(CartMixin, View):
                 'cart': cart
             })
         return JsonResponse({
-            'succes': True,
+            'success': True,
             'message': 'Cart cleared'
         })
 

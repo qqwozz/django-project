@@ -35,8 +35,11 @@ class CustomUserCreationForm(UserCreationForm):
     
 
     def save(self, commit=True):
+        # Authentication is keyed on email (USERNAME_FIELD = 'email'), so we
+        # mirror it into the inherited ``username`` column to satisfy its
+        # NOT NULL / uniqueness constraint.
         user = super().save(commit=False)
-        user.username = None
+        user.username = user.email
         if commit:
             user.save()
         return user
@@ -104,7 +107,7 @@ class CustomUserUpdateForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if email and User.objects.filter(email=email).exclude(id=self.instance.id).exists():
-            raise forms.ValidationError('This email is alredy in use.')
+            raise forms.ValidationError('This email is already in use.')
         return email
     
 

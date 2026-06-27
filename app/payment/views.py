@@ -1,18 +1,14 @@
 from django.shortcuts import render
 import stripe
-import requests
 from django.conf import settings
-from django.shortcuts import redirect, get_object_or_404, render
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotAllowed
+from django.shortcuts import redirect, get_object_or_404
+from django.http import HttpResponse
 from django.template.response import TemplateResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
 from orders.models import Order
 from cart.views import CartMixin
-from decimal import Decimal
-import json
-import hashlib
-import base64
 
 # stripe login
 # stripe listen --forward-to localhost:8000/payment/stripe/webhook/
@@ -23,7 +19,7 @@ stripe_endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
 
 
 def create_stripe_checkout_session(order, request):
-    cart = CartMixin().get_cart(request)
+    cart = request.cart
     line_items = []
     for item in cart.items.select_related('product', 'product_size'):
         line_items.append({
@@ -43,7 +39,7 @@ def create_stripe_checkout_session(order, request):
             line_items=line_items,
             mode='payment',
             success_url=request.build_absolute_uri('/payment/stripe/success/') + '?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=request.build_absolute_uri('/payment/stripe/cancel/') + f'order_id={order.id}',
+            cancel_url=request.build_absolute_uri('/payment/stripe/cancel/') + f'?order_id={order.id}',
             metadata={
                 'order_id': order.id
             }
@@ -69,14 +65,14 @@ def stripe_webhook(request):
         )
     except ValueError as e:
         return HttpResponse(status=400)
-    except stripe.error.SignatureVerificartionError as e:
+    except stripe.error.SignatureVerificationError as e:
         return HttpResponse(status=400)
     
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         order_id = session['metadata'].get('order_id')
         try:
-            order = Order.object.get(id=order_id)
+            order = Order.objects.get(id=order_id)
             order.status = 'processing'
             order.stripe_payment_intent_id = session.get('payment_intent')
             order.save()
@@ -85,6 +81,7 @@ def stripe_webhook(request):
         
     return HttpResponse(status=200)
 
+@login_required(login_url='/users/login')
 def stripe_success(request):
     session_id = request.GET.get('session_id')
     if session_id:
@@ -93,18 +90,20 @@ def stripe_success(request):
             order_id = session.metadata.get('order_id')
             order = get_object_or_404(Order, id=order_id)
 
-            cart = CartMixin().get_cart(request)
-            cart.clear()
+            if session.payment_status == 'paid':
+                cart = CartMixin().get_cart(request)
+                cart.clear()
 
             context = {'order': order}
             if request.headers.get('HX-Request'):
                 return TemplateResponse(request, 'payment/stripe_success_content.html', context)
             return render(request, 'payment/stripe_success.html', context)
-        except Exception as e:
-            raise
+        except Exception:
+            return redirect('main:index')
     return redirect('main:index')
 
 
+@login_required(login_url='/users/login')
 def stripe_cancel(request):
     order_id = request.GET.get('order_id')
     if order_id:
