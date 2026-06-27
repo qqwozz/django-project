@@ -14,7 +14,7 @@ class OrderItemInline(admin.TabularInline):
 
     def image_preview(self, obj):
         if obj.product.main_image:
-            return mark_safe(f'<img src="{obj.product.main_image.url}" style="max-height: 100px; "max-width: 100px; object-fit: cover;" />')
+            return mark_safe(f'<img src="{obj.product.main_image.url}" style="max-height: 100px; max-width: 100px; object-fit: cover;" />')
         return mark_safe('<span style="color: gray;"> No Image</span>')
     image_preview.short_description = 'Image'
 

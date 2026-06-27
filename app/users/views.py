@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.http import HttpResponse
 from django.template.response import TemplateResponse
+from django_ratelimit.decorators import ratelimit
 from .forms import CustomUserCreationForm, CustomUserLoginForm, \
     CustomUserUpdateForm
 from .models import CustomUser
@@ -23,8 +24,14 @@ def register(request):
     return render(request, 'users/register.html', {'form': form})
 
 
+@ratelimit(key='ip', rate='5/m', method='POST', block=True)
 def login_view(request):
     if request.method == 'POST':
+        was_limited = getattr(request, 'limited', False)
+        if was_limited:
+            messages.error(request, 'Too many login attempts. Please try again in a minute.')
+            return render(request, 'users/login.html', {'form': CustomUserLoginForm()})
+
         form = CustomUserLoginForm(request=request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
@@ -58,8 +65,7 @@ def profile_view(request):
 
 @login_required(login_url='/users/login')
 def account_details(request):
-    user = CustomUser.objects.get(id=request.user.id)
-    return TemplateResponse(request, 'users/partials/account_details.html', {'user': user})
+    return TemplateResponse(request, 'users/partials/account_details.html', {'user': request.user})
 
 
 @login_required(login_url='/users/login')
@@ -77,15 +83,13 @@ def update_account_details(request):
             user = form.save(commit=False)
             user.clean()
             user.save()
-            updated_user = CustomUser.objects.get(id=user.id)
-            request.user = updated_user
             if request.headers.get('HX-Request'):
-                return TemplateResponse(request, 'users/partials/account_details.html', {'user': updated_user})
-            return TemplateResponse(request, 'users/partials/account_details.html', {'user': updated_user})
+                return TemplateResponse(request, 'users/partials/account_details.html', {'user': user})
+            return TemplateResponse(request, 'users/partials/account_details.html', {'user': user})
         else:
             return TemplateResponse(request, 'users/partials/edit_account_details.html', {'user': request.user, 'form': form})
     if request.headers.get('HX-Request'):
-        return HttpResponse(headers={'HX-Redirect': reverse('user:profile')})
+        return HttpResponse(headers={'HX-Redirect': reverse('users:profile')})
     return redirect('users:profile')
 
 

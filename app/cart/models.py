@@ -1,28 +1,31 @@
 from django.db import models
-from django.contrib.sessions.models import Session
+from django.conf import settings
 from main.models import Product, ProductSize
 from decimal import Decimal
 
 
 class Cart(models.Model):
     session_key = models.CharField(max_length=40, unique=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='carts'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-
     def __str__(self):
         return f"Cart {self.session_key}"
-    
 
     @property
     def total_items(self):
-        return sum(item.quantity for item in self.items.all())
-    
-    
+        return self.items.aggregate(total=models.Sum('quantity'))['total'] or 0
+
     @property
     def subtotal(self):
-        return sum(item.total_price for item in self.items.all())
-    
+        from django.db.models import F, Sum
+        return self.items.aggregate(
+            total=Sum(F('product__price') * F('quantity'))
+        )['total'] or Decimal('0.00')
 
     def add_product(self, product, product_size, quantity=1):
         cart_item, created = CartItem.objects.get_or_create(
@@ -37,7 +40,6 @@ class Cart(models.Model):
             cart_item.save()
 
         return cart_item
-    
 
     def remove_item(self, item_id):
         try:
@@ -46,23 +48,35 @@ class Cart(models.Model):
             return True
         except CartItem.DoesNotExist:
             return False
-        
-    
+
     def update_item_quantity(self, item_id, quantity):
         try:
             item = self.items.get(id=item_id)
             if quantity > 0:
                 item.quantity = quantity
-                item.sav()
+                item.save()
             else:
                 item.delete()
             return True
         except CartItem.DoesNotExist:
             return False
-        
-    
+
     def clear(self):
         self.items.all().delete()
+
+    def merge_from(self, other_cart):
+        for other_item in other_cart.items.select_related('product', 'product_size'):
+            existing = self.items.filter(
+                product=other_item.product,
+                product_size=other_item.product_size,
+            ).first()
+            if existing:
+                existing.quantity += other_item.quantity
+                existing.save()
+            else:
+                other_item.cart = self
+                other_item.save(update_fields=['cart'])
+        other_cart.delete()
 
 
 class CartItem(models.Model):

@@ -1,3 +1,5 @@
+from django.db import transaction
+from django.db.models import F
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
@@ -56,14 +58,14 @@ class CheckoutView(CartMixin, View):
                 return TemplateResponse(request, 'orders/empty_cart.html', {'message': 'Your cart is empty'})
             return redirect('cart:cart_modal')
 
-        if not payment_provider or payment_provider not in ['stripe', 'heleket']:
+        if not payment_provider or payment_provider not in ['stripe']:
             logger.error(f"Invalid or missing payment provider: {payment_provider}")
             context = {
                 'form': OrderForm(user=request.user),
                 'cart': cart,
                 'cart_items': cart.items.select_related('product', 'product_size__size').order_by('-added_at'),
                 'total_price': cart.subtotal,
-                'error_message': 'Please select a valid payment provider (Stripe or Heleket).',
+                'error_message': 'Please select a valid payment provider.',
             }
             if request.headers.get('HX-Request'):
                 return TemplateResponse(request, 'orders/checkout_content.html', context)
@@ -76,40 +78,58 @@ class CheckoutView(CartMixin, View):
         form = OrderForm(form_data, user=request.user)
 
         if form.is_valid():
-            order = Order.objects.create(
-                user=request.user,
-                first_name=form.cleaned_data['first_name'],
-                last_name=form.cleaned_data['last_name'],
-                email=form.cleaned_data['email'],
-                company=form.cleaned_data['company'],
-                address1=form.cleaned_data['address1'],
-                address2=form.cleaned_data['address2'],
-                city=form.cleaned_data['city'],
-                country=form.cleaned_data['country'],
-                province=form.cleaned_data['province'],
-                postal_code=form.cleaned_data['postal_code'],
-                phone=form.cleaned_data['phone'],
-                special_instructions='',
-                total_price=total_price,
-                payment_provider=payment_provider,
-            )
+            with transaction.atomic():
+                cart_items = list(cart.items.select_related('product', 'product_size'))
+                for item in cart_items:
+                    locked_size = ProductSize.objects.select_for_update().get(id=item.product_size.id)
+                    if locked_size.stock < item.quantity:
+                        context = {
+                            'form': form,
+                            'cart': cart,
+                            'cart_items': cart.items.select_related('product', 'product_size__size').order_by('-added_at'),
+                            'total_price': total_price,
+                            'error_message': f'Not enough stock for {item.product.name} ({locked_size.size.name}). Only {locked_size.stock} left.',
+                        }
+                        if request.headers.get('HX-Request'):
+                            return TemplateResponse(request, 'orders/checkout_content.html', context)
+                        return render(request, 'orders/checkout.html', context)
 
-            for item in cart.items.select_related('product', 'product_size'):
-                logger.debug(f"Processing cart item: product={item.product.name}, size={item.product_size.size.name}, quantity={item.quantity}")
-                OrderItem.objects.create(
-                    order=order,
-                    product=item.product,
-                    size=item.product_size,
-                    quantity=item.quantity,
-                    price=item.product.price or Decimal('0.00')
+                order = Order.objects.create(
+                    user=request.user,
+                    first_name=form.cleaned_data['first_name'],
+                    last_name=form.cleaned_data['last_name'],
+                    email=form.cleaned_data['email'],
+                    company=form.cleaned_data['company'],
+                    address1=form.cleaned_data['address1'],
+                    address2=form.cleaned_data['address2'],
+                    city=form.cleaned_data['city'],
+                    country=form.cleaned_data['country'],
+                    province=form.cleaned_data['province'],
+                    postal_code=form.cleaned_data['postal_code'],
+                    phone=form.cleaned_data['phone'],
+                    special_instructions='',
+                    total_price=total_price,
+                    payment_provider=payment_provider,
                 )
+
+                for item in cart_items:
+                    locked_size = ProductSize.objects.select_for_update().get(id=item.product_size.id)
+                    locked_size.stock = F('stock') - item.quantity
+                    locked_size.save(update_fields=['stock'])
+
+                    OrderItem.objects.create(
+                        order=order,
+                        product=item.product,
+                        size=item.product_size,
+                        quantity=item.quantity,
+                        price=item.product.price or Decimal('0.00')
+                    )
 
             try:
                 logger.info(f"Creating payment session for provider: {payment_provider}")
                 if payment_provider == 'stripe':
                     logger.debug("Creating Stripe checkout session")
                     checkout_session = create_stripe_checkout_session(order, request)
-                    cart.clear()
                     if request.headers.get('HX-Request'):
                         response = HttpResponse(status=200)
                         response['HX-Redirect'] = checkout_session.url
@@ -118,6 +138,10 @@ class CheckoutView(CartMixin, View):
                     return redirect(checkout_session.url)
             except Exception as e:
                 logger.error(f"Error creating payment: {str(e)}", exc_info=True)
+                for item in order.items.select_related('product_size'):
+                    ProductSize.objects.filter(id=item.product_size.id).update(
+                        stock=F('stock') + item.quantity
+                    )
                 order.delete()
                 context = {
                     'form': form,

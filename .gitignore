@@ -1,13 +1,30 @@
-venv/
-.pylintrc
+# Python
+*.pyc
+*.pyo
 __pycache__/
+*.egg-info/
+dist/
+build/
+*.egg
 
-.vscode
-.idea
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Environment variables
 .env
-django.log
-security.log
 
+# Django
 db.sqlite3
+static/
 media/
-debug.log
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
