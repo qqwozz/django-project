@@ -94,6 +94,7 @@ def update_account_details(request):
     return redirect('users:profile')
 
 
+@login_required(login_url='/users/login')
 @require_POST
 def logout_view(request):
     logout(request)
