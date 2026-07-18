@@ -30,9 +30,7 @@
             </div>
         {% endif %}
         
-        <form id="loginForm" method="post" class="space-y-6" 
-              hx-post="{% url 'users:login' %}" 
-              hx-target="#main-content">
+        <form id="loginForm" method="post" class="space-y-6">
             {% csrf_token %}
             
             <div>
@@ -56,11 +54,8 @@
                 >
                     LOG IN
                 </button>
-                <a 
+                <a
                     href="{% url 'users:register' %}"
-                    hx-get="{% url 'users:register' %}"
-                    hx-target="#main-content"
-                    hx-push-url="true"
                     class="border-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900 font-semibold py-3 px-6 transition-colors duration-200 text-sm tracking-wide text-center"
                 >
                     CREATE AN ACCOUNT
