@@ -80,8 +80,10 @@ class CheckoutView(CartMixin, View):
         if form.is_valid():
             with transaction.atomic():
                 cart_items = list(cart.items.select_related('product', 'product_size'))
+                locked_sizes = {}
                 for item in cart_items:
                     locked_size = ProductSize.objects.select_for_update().get(id=item.product_size.id)
+                    locked_sizes[item.product_size.id] = locked_size
                     if locked_size.stock < item.quantity:
                         context = {
                             'form': form,
@@ -113,7 +115,7 @@ class CheckoutView(CartMixin, View):
                 )
 
                 for item in cart_items:
-                    locked_size = ProductSize.objects.select_for_update().get(id=item.product_size.id)
+                    locked_size = locked_sizes[item.product_size.id]
                     locked_size.stock = F('stock') - item.quantity
                     locked_size.save(update_fields=['stock'])
 
