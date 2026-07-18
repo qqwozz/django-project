@@ -7,6 +7,7 @@ from django.db import transaction
 from main.models import Product, ProductSize
 from .models import Cart, CartItem
 from .forms import AddToCartForm
+from django.db.models import F
 
 
 class CartMixin:
@@ -50,39 +51,37 @@ class AddToCartView(CartMixin, View):
                 'error': 'Invalid form data',
                 'errors': form.errors,
             }, status=400)
-        
+
         size_id = form.cleaned_data.get('size_id')
         if size_id:
-            product_size = get_object_or_404(
-                ProductSize,
-                id=size_id,
-                product=product
+            product_size = ProductSize.objects.select_for_update().get(
+                id=size_id, product=product
             )
         else:
-            product_size = product.product_sizes.filter(stock__gt=0).first()
+            product_size = product.product_sizes.select_for_update().filter(
+                stock__gt=0
+            ).first()
             if not product_size:
                 return JsonResponse({
                     'error': 'No sizes available'
                 }, status=400)
 
         quantity = form.cleaned_data['quantity']
-        if product_size.stock < quantity:
-            return JsonResponse({
-                'error': f'Only {product_size.stock} items available'
-            }, status=400)
 
         existing_item = cart.items.filter(
             product=product,
             product_size=product_size,
         ).first()
 
-        if existing_item:
-            total_quantity = existing_item.quantity + quantity
-            if total_quantity > product_size.stock:
-                return JsonResponse({
-                    'error': f"Cannot add {quantity} items. Only {product_size.stock - existing_item.quantity} more available."
-                }, status=400)
-            
+        current_qty_in_cart = existing_item.quantity if existing_item else 0
+        total_needed = current_qty_in_cart + quantity
+
+        if total_needed > product_size.stock:
+            available = product_size.stock - current_qty_in_cart
+            return JsonResponse({
+                'error': f'Only {available} more items available'
+            }, status=400)
+
         cart_item = cart.add_product(product, product_size, quantity)
 
         request.session['cart_id'] = cart.id
