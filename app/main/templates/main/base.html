@@ -155,7 +155,7 @@
                 class="text-sm font-medium text-gray-900 uppercase hover:text-gray-600">
                     ACCOUNT
                 </a>
-                <a href="#" id="mobileCart" class="block text-sm font-medium text-gray-900 hover:text-gray-700 py-2">CART (0)</a>
+                <a href="#" id="mobileCart" class="block text-sm font-medium text-gray-900 hover:text-gray-700 py-2">CART ({{ cart_total_items }})</a>
             </div>
         </div>
     </div>
@@ -215,12 +215,12 @@
                     class="text-sm font-medium text-gray-900 uppercase hover:text-gray-600">
                         ACCOUNT
                     </a>
-                    <a href="#" id="desktopCart" class="text-sm font-medium text-gray-900 hover:text-gray-700">CART (0)</a>
+                    <a href="#" id="desktopCart" class="text-sm font-medium text-gray-900 hover:text-gray-700">CART ({{ cart_total_items }})</a>
                 </div>
                 
                 <!-- Mobile Cart Icon -->
                 <div class="md:hidden">
-                    <a href="#" id="mobileCartHeader" class="text-xs font-medium text-gray-900">CART (0)</a>
+                    <a href="#" id="mobileCartHeader" class="text-xs font-medium text-gray-900">CART ({{ cart_total_items }})</a>
                 </div>
             </div>
         </div>
