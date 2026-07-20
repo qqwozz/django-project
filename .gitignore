@@ -18,6 +18,7 @@ env/
 # Django
 db.sqlite3
 static/
+staticfiles/
 media/
 *.log
 
@@ -28,3 +29,6 @@ media/
 # OS
 .DS_Store
 Thumbs.db
+
+# Generated
+seed_erd.py

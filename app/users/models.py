@@ -28,6 +28,7 @@ class CustomUserManager(BaseUserManager):
 
 
 class CustomUser(AbstractUser):
+    username = None
     email = models.EmailField(unique=True, max_length=254)
     # Override AbstractUser's free-text name fields to enforce length/required.
     first_name = models.CharField(max_length=50)

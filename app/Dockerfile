@@ -1,5 +1,5 @@
 # Stage 1: Build dependencies
-FROM python:3.10-slim AS builder
+FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Stage 2: Production image
-FROM python:3.10-slim
+FROM python:3.13-slim
 
 RUN apt-get update && apt-get install -y \
     libpq5 \
@@ -24,7 +24,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN chmod +x entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 EXPOSE 8000
 
